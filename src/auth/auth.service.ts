@@ -1,23 +1,23 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { UsersService } from "../users/users.service";
-import { Role } from "../roles/role.enum";
-import { CreateUserDto } from "../users/dto/create-user.dto";
+import { UserService } from "../user/user.service";
+import { CreateUserDto } from "../user/dto/create-user.dto";
 import { JwtService } from "@nestjs/jwt";
 
 @Injectable()
 export class AuthService {
-  constructor(private userService: UsersService, private jwtService: JwtService) {
+  constructor(private userService: UserService, private jwtService: JwtService) {
   }
 
   async signIn({ username, password }: CreateUserDto): Promise<{ access_token: string }> {
     const user = await this.userService.findOne(username);
-    if (user?.password !== password) {
-      throw new UnauthorizedException();
+    if (!user ||  user?.password !== password) {
+      throw new UnauthorizedException('Wrong username or password', {cause: new Error(), description: 'Wrong username or password'});
     }
-    const data = { subset: user.userId, username: user.username };
+    console.log(user)
     // generate jwt and return here instead of user obj
     return {
-      access_token: this.jwtService.sign(data),
+      access_token: this.jwtService.sign({uid: user.id, username: user.username, role: user.role}, {expiresIn: '20m'}),
     }
   }
+
 }
